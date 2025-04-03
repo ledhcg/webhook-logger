@@ -43,7 +43,7 @@ export default function GuideTab({
           <div className="flex items-center gap-3">
             <div className="bg-blue-50 p-1 rounded-md flex-1">
               <code className="font-mono text-sm text-blue-600 px-2 py-1 rounded-md">
-                X-Webhook-Token: {selectedToken}
+              X-Webhook-Token: <b>{selectedToken}</b>
               </code>
             </div>
             <Select onValueChange={handleTokenSelect} value={selectedToken}>

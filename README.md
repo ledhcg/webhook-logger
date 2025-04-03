@@ -4,7 +4,7 @@ A simple webhook logging server built with Next.js 15, TypeScript, and Supabase.
 
 ## Features
 
-- Captures webhook requests (GET, POST, PUT, DELETE, PATCH)
+- Captures webhook POST requests
 - Logs request method, headers, body, source, and path
 - Real-time display of webhook logs
 - Detailed view for each log entry

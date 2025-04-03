@@ -45,8 +45,8 @@ export default function Home() {
               Webhook <span className="text-blue-600">Logger</span>
             </h1>
             <p className="text-xl md:text-2xl text-slate-600 max-w-3xl mx-auto mb-8">
-              A simple webhook logging server that allows you to receive, log,
-              and inspect webhook requests in real-time.
+              A simple webhook logging server that allows you to receive, log, and inspect 
+              webhook requests in real-time.
             </p>
 
             {/* Authentication buttons */}
@@ -85,8 +85,7 @@ export default function Home() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4 text-slate-800">Features</h2>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Built with Next.js 15, TypeScript, and Supabase for a modern,
-              real-time webhook logging experience.
+              Built with Next.js 15, TypeScript, and Supabase for a modern, real-time webhook logging experience.
             </p>
           </div>
 
@@ -100,8 +99,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <p className="text-slate-600">
-                  Captures webhook POST requests for reliable logging and
-                  inspection.
+                  Captures webhook POST requests for reliable logging and inspection.
                 </p>
               </CardContent>
             </Card>
@@ -115,8 +113,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <p className="text-slate-600">
-                  Logs request method, headers, body, source, and path for
-                  complete traceability.
+                  Logs request method, headers, body, source, and path for complete traceability.
                 </p>
               </CardContent>
             </Card>
@@ -130,8 +127,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <p className="text-slate-600">
-                  See webhook logs in real-time with Supabase Realtime
-                  integration.
+                  See webhook logs in real-time with Supabase Realtime integration.
                 </p>
               </CardContent>
             </Card>
@@ -145,8 +141,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <p className="text-slate-600">
-                  View detailed information for each log entry with a clean,
-                  intuitive interface.
+                  View detailed information for each log entry with a clean, intuitive interface.
                 </p>
               </CardContent>
             </Card>
@@ -160,8 +155,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <p className="text-slate-600">
-                  Secure user authentication and token-based webhook access for
-                  privacy.
+                  Secure user authentication and token-based webhook access for privacy.
                 </p>
               </CardContent>
             </Card>
@@ -175,8 +169,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <p className="text-slate-600">
-                  Filter webhook logs by specific tokens to quickly find
-                  relevant data.
+                  Filter webhook logs by specific tokens to quickly find relevant data.
                 </p>
               </CardContent>
             </Card>
@@ -205,12 +198,10 @@ export default function Home() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p>
-                    Webhook Logger provides a simple yet powerful way to capture
-                    and inspect webhook requests. Each request is logged with
-                    comprehensive details including headers, body, source IP,
-                    and path.
+                    Webhook Logger provides a simple yet powerful way to capture and inspect webhook requests.
+                    Each request is logged with comprehensive details including headers, body, source IP, and path.
                   </p>
-
+                  
                   <div className="bg-slate-50 p-4 rounded-md">
                     <h3 className="font-medium mb-2 flex items-center">
                       <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
@@ -220,37 +211,34 @@ export default function Home() {
                       Sign up for a free account to start logging your webhooks.
                     </p>
                   </div>
-
+                  
                   <div className="bg-slate-50 p-4 rounded-md">
                     <h3 className="font-medium mb-2 flex items-center">
                       <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
                       Generate webhook tokens
                     </h3>
                     <p className="text-sm text-slate-600 ml-6">
-                      Create and manage unique tokens for different services or
-                      applications.
+                      Create and manage unique tokens for different services or applications.
                     </p>
                   </div>
-
+                  
                   <div className="bg-slate-50 p-4 rounded-md">
                     <h3 className="font-medium mb-2 flex items-center">
                       <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
                       Send requests with your token
                     </h3>
                     <p className="text-sm text-slate-600 ml-6">
-                      Include your token in the X-Webhook-Token header with your
-                      requests.
+                      Include your token in the X-Webhook-Token header with your requests.
                     </p>
                   </div>
-
+                  
                   <div className="bg-slate-50 p-4 rounded-md">
                     <h3 className="font-medium mb-2 flex items-center">
                       <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
                       View logs in real-time
                     </h3>
                     <p className="text-sm text-slate-600 ml-6">
-                      Watch as your webhook logs appear in real-time on your
-                      dashboard.
+                      Watch as your webhook logs appear in real-time on your dashboard.
                     </p>
                   </div>
                 </CardContent>
@@ -279,21 +267,16 @@ export default function Home() {
                           <span>/api/webhook</span>
                         </div>
                         <p className="text-slate-600 ml-16">
-                          Main webhook endpoint that accepts POST requests with
-                          your token
+                          Main webhook endpoint that accepts POST requests with your token
                         </p>
                       </div>
                     </div>
-
+                    
                     <div className="mt-4 font-mono text-sm">
                       <h3 className="font-medium mb-2">Example Headers:</h3>
                       <div className="bg-slate-50 p-4 rounded-md">
-                        <p className="text-slate-600">
-                          Content-Type: application/json
-                        </p>
-                        <p className="text-slate-600">
-                          X-Webhook-Token: your_token_here
-                        </p>
+                        <p className="text-slate-600">Content-Type: application/json</p>
+                        <p className="text-slate-600">X-Webhook-Token: your_token_here</p>
                       </div>
                     </div>
                   </div>
@@ -303,15 +286,10 @@ export default function Home() {
                     <AlertTriangle className="h-4 w-4 text-blue-600" />
                     <AlertTitle>Example curl command</AlertTitle>
                     <AlertDescription className="font-mono text-xs mt-2">
-                      curl -X POST {"{your_domain}"}/api/webhook
-                      <br />
-                      -H &quot;Content-Type: application/json&quot;
-                      <br />
-                      -H &quot;X-Webhook-Token: your_token_here&quot;
-                      <br />
-                      -d &apos;
-                      {`{"event":"test", "data":{"message":"Hello World"}}`}
-                      &apos;
+                      curl -X POST {'{your_domain}'}/api/webhook<br />
+                      -H &quot;Content-Type: application/json&quot;<br />
+                      -H &quot;X-Webhook-Token: your_token_here&quot;<br />
+                      -d '{'{"event":"test", "data":{"message":"Hello World"}}'}' 
                     </AlertDescription>
                   </Alert>
                 </CardFooter>
@@ -336,17 +314,15 @@ export default function Home() {
                         Authentication required
                       </AlertTitle>
                       <AlertDescription className="text-blue-700">
-                        Please sign in or create an account to view your webhook
-                        logs.
+                        Please sign in or create an account to view your webhook logs.
                       </AlertDescription>
                     </Alert>
                   ) : (
                     <div className="space-y-4">
                       <p className="text-slate-600">
-                        Your dashboard provides real-time access to all your
-                        webhook logs. You can filter by token, view detailed
-                        information for each request, and manage your webhook
-                        tokens.
+                        Your dashboard provides real-time access to all your webhook logs.
+                        You can filter by token, view detailed information for each request,
+                        and manage your webhook tokens.
                       </p>
                       <Button asChild>
                         <Link href="/dashboard">Go to your dashboard</Link>
@@ -363,25 +339,23 @@ export default function Home() {
         <footer className="mx-auto pb-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="flex items-center space-x-4 mb-4 md:mb-0">
-              <span className="font-medium text-slate-700">
-                {siteConfig.name}
-              </span>
+              <span className="font-medium text-slate-700">{siteConfig.name}</span>
               <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600">
                 {siteConfig.metadata.version}
               </span>
             </div>
-
+            
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <span className="text-slate-500">Built with Next.js 15</span>
-              <a
-                href={siteConfig.links.github}
-                target="_blank"
+              <a 
+                href={siteConfig.links.github} 
+                target="_blank" 
                 rel="noopener noreferrer"
                 className="text-slate-500 hover:text-blue-600 transition-colors"
               >
                 GitHub
               </a>
-              <a
+              <a 
                 href={siteConfig.author.url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -391,12 +365,10 @@ export default function Home() {
               </a>
             </div>
           </div>
-
+          
           <div className="mt-6 pt-6 border-t border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between text-sm text-slate-500">
             <p>{siteConfig.copyright}</p>
-            <p className="mt-2 md:mt-0">
-              Logs deleted after 7 days of inactivity
-            </p>
+            <p className="mt-2 md:mt-0">Logs deleted after 7 days of inactivity</p>
           </div>
         </footer>
       </div>
