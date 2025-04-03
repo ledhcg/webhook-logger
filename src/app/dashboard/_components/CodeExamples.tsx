@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CodeBlock } from "@/components/ui/code-block";
-import { Cpu, Square } from "lucide-react";
 
 interface CodeExamplesProps {
   selectedToken: string;
