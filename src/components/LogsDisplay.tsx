@@ -17,8 +17,9 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, RefreshCw, Info, Loader2, Copy } from "lucide-react";
+import { Clock, RefreshCw, Info, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { CodeBlock } from "@/components/ui/code-block";
 
 export default function LogsDisplay() {
   const [logs, setLogs] = useState<WebhookLog[]>([]);
@@ -162,15 +163,6 @@ export default function LogsDisplay() {
         return "outline";
     }
   };
-
-  // Copy JSON content to clipboard
-  const copyToClipboard = useCallback((text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard", {
-      description: "JSON content has been copied to clipboard",
-      duration: 2000,
-    });
-  }, []);
 
   // Render refresh controls
   const renderRefreshControls = () => {
@@ -349,36 +341,19 @@ export default function LogsDisplay() {
 
           <TabsContent value="body" className="mt-4">
             <Card>
-              <CardHeader className="py-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm">Body</CardTitle>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          copyToClipboard(
-                            JSON.stringify(selectedLog.body, null, 2)
-                          )
-                        }
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Copy to clipboard</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </CardHeader>
               <CardContent className="py-2">
                 <ScrollArea className="h-[400px]">
-                  <pre className="text-sm font-mono bg-slate-50 p-4 rounded-md overflow-auto">
-                    {selectedLog.body
-                      ? JSON.stringify(selectedLog.body, null, 2)
-                      : "No body content"}
-                  </pre>
+                  <CodeBlock
+                    code={
+                      selectedLog.body
+                        ? JSON.stringify(selectedLog.body, null, 2)
+                        : "No body content"
+                    }
+                    language="json"
+                    showLanguage={true}
+                    showLineNumbers={true}
+                    filename="request-body.json"
+                  />
                 </ScrollArea>
               </CardContent>
             </Card>
@@ -386,9 +361,6 @@ export default function LogsDisplay() {
 
           <TabsContent value="headers" className="mt-4">
             <Card>
-              <CardHeader className="py-2">
-                <CardTitle className="text-sm">Headers</CardTitle>
-              </CardHeader>
               <CardContent className="py-2">
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-2">

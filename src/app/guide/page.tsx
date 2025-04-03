@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,8 +16,14 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Square, Cpu } from "lucide-react";
+import { CodeBlock } from "@/components/ui/code-block";
+import { useState } from "react";
 
 export default function Guide() {
+  const [nodejsLanguage, setNodejsLanguage] = useState<
+    "javascript" | "typescript"
+  >("javascript");
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-white to-slate-50">
       {/* Header section */}
@@ -84,8 +92,9 @@ export default function Guide() {
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-80 rounded-md border">
-                  <div className="p-4 text-sm bg-gray-900 text-white font-mono">
-                    <pre className="whitespace-pre-wrap">{`// Using fetch API (Node.js 18+)
+                  {nodejsLanguage === "javascript" ? (
+                    <CodeBlock
+                      code={`// Using fetch API (Node.js 18+)
 const sendWebhook = async () => {
   try {
     const response = await fetch('${
@@ -119,8 +128,9 @@ sendWebhook();
 const axios = require('axios');
 
 axios.post('${
-                      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-                    }/api/webhook', {
+                        process.env.NEXT_PUBLIC_APP_URL ||
+                        "http://localhost:3000"
+                      }/api/webhook', {
   event: 'user.created',
   data: {
     userId: '123',
@@ -133,8 +143,91 @@ axios.post('${
   }
 })
 .then(response => console.log('Webhook sent successfully:', response.data))
-.catch(error => console.error('Error sending webhook:', error));`}</pre>
-                  </div>
+.catch(error => console.error('Error sending webhook:', error));`}
+                      language="javascript"
+                      showLanguage={true}
+                      filename="node_example.js"
+                      enableLanguageSwitcher={true}
+                      availableLanguages={["javascript", "typescript"]}
+                      onLanguageChange={(lang) => {
+                        setNodejsLanguage(lang as "javascript" | "typescript");
+                      }}
+                    />
+                  ) : (
+                    <CodeBlock
+                      code={`// Using fetch API (Node.js 18+ with TypeScript)
+interface WebhookData {
+  event: string;
+  data: {
+    userId: string;
+    email: string;
+  };
+}
+
+interface WebhookResponse {
+  success: boolean;
+  message: string;
+}
+
+const sendWebhook = async (): Promise<void> => {
+  try {
+    const response = await fetch('${
+      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    }/api/webhook', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Custom-Header': 'Custom Value'
+      },
+      body: JSON.stringify({
+        event: 'user.created',
+        data: {
+          userId: '123',
+          email: 'example@example.com'
+        }
+      } as WebhookData)
+    });
+    
+    const data = await response.json() as WebhookResponse;
+    console.log('Webhook sent successfully:', data);
+  } catch (error: unknown) {
+    console.error('Error sending webhook:', error instanceof Error ? error.message : String(error));
+  }
+};
+
+sendWebhook();
+
+// Using axios with TypeScript
+// npm install axios @types/axios
+import axios from 'axios';
+
+axios.post<WebhookResponse>('${
+                        process.env.NEXT_PUBLIC_APP_URL ||
+                        "http://localhost:3000"
+                      }/api/webhook', {
+  event: 'user.created',
+  data: {
+    userId: '123',
+    email: 'example@example.com'
+  }
+} as WebhookData, {
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Custom-Header': 'Custom Value'
+  }
+})
+.then(response => console.log('Webhook sent successfully:', response.data))
+.catch((error: unknown) => console.error('Error sending webhook:', error));`}
+                      language="typescript"
+                      showLanguage={true}
+                      filename="node_example.ts"
+                      enableLanguageSwitcher={true}
+                      availableLanguages={["javascript", "typescript"]}
+                      onLanguageChange={(lang) => {
+                        setNodejsLanguage(lang as "javascript" | "typescript");
+                      }}
+                    />
+                  )}
                 </ScrollArea>
               </CardContent>
             </Card>
@@ -151,8 +244,8 @@ axios.post('${
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-80 rounded-md border">
-                  <div className="p-4 text-sm bg-gray-900 text-white font-mono">
-                    <pre className="whitespace-pre-wrap">{`# Using requests library
+                  <CodeBlock
+                    code={`# Using requests library
 # pip install requests
 
 import requests
@@ -176,8 +269,11 @@ payload = {
 # POST request
 response = requests.post(url, headers=headers, data=json.dumps(payload))
 print(f"Status Code: {response.status_code}")
-print(f"Response: {response.json()}")`}</pre>
-                  </div>
+print(f"Response: {response.json()}")`}
+                    language="python"
+                    showLanguage={true}
+                    filename="python_example.py"
+                  />
                 </ScrollArea>
               </CardContent>
             </Card>
@@ -194,8 +290,8 @@ print(f"Response: {response.json()}")`}</pre>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-80 rounded-md border">
-                  <div className="p-4 text-sm bg-gray-900 text-white font-mono">
-                    <pre className="whitespace-pre-wrap">{`# Basic POST request
+                  <CodeBlock
+                    code={`# Basic POST request
 curl -X POST ${
                       process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
                     }/api/webhook \\
@@ -207,8 +303,11 @@ curl -X POST ${
       "userId": "123",
       "email": "example@example.com"
     }
-  }'`}</pre>
-                  </div>
+  }'`}
+                    language="bash"
+                    showLanguage={true}
+                    filename="curl_example.sh"
+                  />
                 </ScrollArea>
               </CardContent>
             </Card>
