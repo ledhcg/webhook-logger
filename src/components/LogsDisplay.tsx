@@ -1,7 +1,7 @@
 "use client";
 
 import { WebhookLog, supabase } from "@/lib/supabase";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -17,20 +17,21 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Clock, RefreshCw, Info, Loader2, Copy, Check } from "lucide-react";
+import { Clock, RefreshCw, Info, Loader2, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 export default function LogsDisplay() {
   const [logs, setLogs] = useState<WebhookLog[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedLog, setSelectedLog] = useState<WebhookLog | null>(null);
   const [isRealtimeEnabled, setIsRealtimeEnabled] = useState<boolean>(true);
+  const [followLatest, setFollowLatest] = useState<boolean>(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState("body");
 
-  const fetchLogs = async () => {
+  // Memoize fetchLogs to prevent recreating on each render
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -46,7 +47,8 @@ export default function LogsDisplay() {
       setLogs(data || []);
 
       // Select the first log by default if there are logs and none are currently selected
-      if (data && data.length > 0 && !selectedLog) {
+      // or if follow latest is enabled
+      if (data && data.length > 0 && (followLatest || !selectedLog)) {
         setSelectedLog(data[0]);
       }
 
@@ -57,59 +59,85 @@ export default function LogsDisplay() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [followLatest, selectedLog]);
 
+  // Initial data fetch - only run once on component mount
   useEffect(() => {
     fetchLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Intentionally omitting fetchLogs to prevent refetching on its changes
 
-    // Set up realtime subscription
-    const subscription = isRealtimeEnabled
-      ? supabase
-          .channel("webhook_logs_changes")
-          .on(
-            "postgres_changes",
-            {
-              event: "INSERT",
-              schema: "public",
-              table: "webhook_logs",
-            },
-            (payload) => {
-              // When a new record is inserted, add it to the logs array
-              setLogs((currentLogs) => [
-                payload.new as WebhookLog,
-                ...currentLogs,
-              ]);
+  // Setup realtime subscription
+  useEffect(() => {
+    if (!isRealtimeEnabled) return;
 
-              // If no log is selected, select the new one
-              if (!selectedLog) {
-                setSelectedLog(payload.new as WebhookLog);
-              }
+    const subscription = supabase
+      .channel("webhook_logs_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "webhook_logs",
+        },
+        (payload) => {
+          const newLog = payload.new as WebhookLog;
 
-              setLastRefreshed(new Date());
-            }
-          )
-          .subscribe()
-      : null;
+          // When a new record is inserted, add it to the logs array
+          setLogs((currentLogs) => [newLog, ...currentLogs]);
+
+          // If follow latest is enabled or no log is selected, select the new one
+          if (followLatest || !selectedLog) {
+            setSelectedLog(newLog);
+          }
+
+          setLastRefreshed(new Date());
+        }
+      )
+      .subscribe();
 
     return () => {
-      // Clean up subscription when component unmounts
-      if (subscription) {
-        supabase.removeChannel(subscription);
-      }
+      // Clean up subscription when component unmounts or isRealtimeEnabled changes
+      supabase.removeChannel(subscription);
     };
-  }, [isRealtimeEnabled, selectedLog]);
+  }, [isRealtimeEnabled, followLatest, selectedLog]);
 
-  const selectLog = (log: WebhookLog) => {
-    setSelectedLog(log);
-  };
+  const selectLog = useCallback(
+    (log: WebhookLog) => {
+      setSelectedLog(log);
+      // When manually selecting a log, disable follow latest
+      if (followLatest) {
+        setFollowLatest(false);
+        toast.info("Auto-follow disabled", {
+          description:
+            "You've manually selected a log, auto-follow has been disabled",
+          duration: 2000,
+        });
+      }
+    },
+    [followLatest]
+  );
 
-  const toggleRealtime = () => {
-    setIsRealtimeEnabled(!isRealtimeEnabled);
-  };
+  const toggleRealtime = useCallback(() => {
+    setIsRealtimeEnabled((prev) => !prev);
+  }, []);
 
-  const handleManualRefresh = () => {
+  const toggleFollowLatest = useCallback(() => {
+    setFollowLatest((prev) => {
+      const newValue = !prev;
+
+      // If enabling follow latest, immediately select the most recent log
+      if (newValue && logs.length > 0) {
+        setSelectedLog(logs[0]);
+      }
+
+      return newValue;
+    });
+  }, [logs]);
+
+  const handleManualRefresh = useCallback(() => {
     fetchLogs();
-  };
+  }, [fetchLogs]);
 
   // Format the last refreshed timestamp
   const formatLastRefreshed = () => {
@@ -136,13 +164,13 @@ export default function LogsDisplay() {
   };
 
   // Copy JSON content to clipboard
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = useCallback((text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard", {
       description: "JSON content has been copied to clipboard",
       duration: 2000,
     });
-  };
+  }, []);
 
   // Render refresh controls
   const renderRefreshControls = () => {
@@ -156,13 +184,24 @@ export default function LogsDisplay() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="realtime"
-                checked={isRealtimeEnabled}
-                onCheckedChange={toggleRealtime}
-              />
-              <Label htmlFor="realtime">Realtime updates</Label>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="realtime"
+                  checked={isRealtimeEnabled}
+                  onCheckedChange={toggleRealtime}
+                />
+                <Label htmlFor="realtime">Realtime updates</Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="follow-latest"
+                  checked={followLatest}
+                  onCheckedChange={toggleFollowLatest}
+                />
+                <Label htmlFor="follow-latest">Auto-follow latest</Label>
+              </div>
             </div>
 
             <TooltipProvider>
