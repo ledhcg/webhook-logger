@@ -2,6 +2,12 @@
 
 import LogsDisplay from "./LogsDisplay";
 
-export default function LogsDisplayWrapper() {
-  return <LogsDisplay />;
+interface LogsDisplayWrapperProps {
+  selectedTokenId?: string;
+}
+
+export default function LogsDisplayWrapper({
+  selectedTokenId,
+}: LogsDisplayWrapperProps) {
+  return <LogsDisplay tokenId={selectedTokenId} />;
 }

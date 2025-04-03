@@ -1,4 +1,5 @@
-import LogsDisplayWrapper from "../components/LogsDisplayWrapper";
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,9 +21,21 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { MessageSquare, Info, AlertTriangle } from "lucide-react";
+import {
+  MessageSquare,
+  Info,
+  AlertTriangle,
+  LogIn,
+  UserPlus,
+} from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function Home() {
+  const { user, isLoading } = useAuth();
+
+  // Removed automatic redirect to dashboard for authenticated users
+  // This allows authenticated users to view public pages
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-white to-slate-50">
       {/* Header with breadcrumb */}
@@ -47,6 +60,32 @@ export default function Home() {
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">
               Receive, inspect and debug webhook requests from any service
             </p>
+
+            {/* Authentication buttons */}
+            {!isLoading && !user && (
+              <div className="flex justify-center gap-4 mt-8">
+                <Button asChild>
+                  <Link href="/auth/login">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Sign in
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/auth/register">
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Create account
+                  </Link>
+                </Button>
+              </div>
+            )}
+
+            {!isLoading && user && (
+              <div className="mt-8">
+                <Button asChild>
+                  <Link href="/dashboard">Go to dashboard</Link>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -67,11 +106,21 @@ export default function Home() {
                   Recent Webhook Logs
                 </CardTitle>
                 <CardDescription>
-                  View and inspect your recent webhook requests
+                  Sign in to view and inspect your webhook requests
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <LogsDisplayWrapper />
+                {!user && (
+                  <Alert className="bg-blue-50 border-blue-200">
+                    <AlertTitle className="text-blue-800 font-medium">
+                      Authentication required
+                    </AlertTitle>
+                    <AlertDescription className="text-blue-700">
+                      Please sign in or create an account to view your webhook
+                      logs.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

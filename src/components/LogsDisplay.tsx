@@ -1,7 +1,7 @@
 "use client";
 
-import { WebhookLog, supabase } from "@/lib/supabase";
-import { useState, useEffect, useCallback } from "react";
+import { WebhookLog, supabase, getCurrentUser } from "@/lib/supabase";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,7 +21,11 @@ import { Clock, RefreshCw, Info, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { CodeBlock } from "@/components/ui/code-block";
 
-export default function LogsDisplay() {
+interface LogsDisplayProps {
+  tokenId?: string;
+}
+
+export default function LogsDisplay({ tokenId }: LogsDisplayProps = {}) {
   const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,78 +34,139 @@ export default function LogsDisplay() {
   const [followLatest, setFollowLatest] = useState<boolean>(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState("body");
+  const [userId, setUserId] = useState<string | null>(null);
+  const isFirstLoad = useRef(true);
+
+  // Check if user is authenticated
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const user = await getCurrentUser();
+        setUserId(user?.id || null);
+      } catch (err) {
+        console.error("Error checking authentication:", err);
+      }
+    }
+
+    checkAuth();
+  }, []);
 
   // Memoize fetchLogs to prevent recreating on each render
   const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+
+      let query = supabase
         .from("webhook_logs")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(100);
+
+      // If user is authenticated, filter logs by user_id
+      if (userId) {
+        query = query.eq("user_id", userId);
+      }
+
+      // If a specific token is selected, filter logs by token_id
+      if (tokenId) {
+        query = query.eq("token_id", tokenId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         throw new Error(error.message || "Failed to fetch logs");
       }
 
       setLogs(data || []);
-
-      // Select the first log by default if there are logs and none are currently selected
-      // or if follow latest is enabled
-      if (data && data.length > 0 && (followLatest || !selectedLog)) {
-        setSelectedLog(data[0]);
-      }
-
       setLastRefreshed(new Date());
       setError(null);
+
+      // Return the data so it can be used outside
+      return data || [];
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error occurred");
+      return [];
     } finally {
       setLoading(false);
     }
-  }, [followLatest, selectedLog]);
+  }, [userId, tokenId]);
 
-  // Initial data fetch - only run once on component mount
+  // Initial data fetch - only run once on component mount or when userId or tokenId changes
   useEffect(() => {
-    fetchLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Intentionally omitting fetchLogs to prevent refetching on its changes
+    const loadData = async () => {
+      const data = await fetchLogs();
+
+      // Select the first log by default if there are logs and none are currently selected
+      // or if follow latest is enabled
+      if (
+        data.length > 0 &&
+        (followLatest || !selectedLog || isFirstLoad.current)
+      ) {
+        setSelectedLog(data[0]);
+        isFirstLoad.current = false;
+      }
+    };
+
+    loadData();
+  }, [userId, tokenId, fetchLogs]);
 
   // Setup realtime subscription
   useEffect(() => {
     if (!isRealtimeEnabled) return;
+    // Create a unique channel name based on the token ID
+    const channelName = tokenId
+      ? `webhook_logs_token_${tokenId}`
+      : "webhook_logs_changes";
 
     const subscription = supabase
-      .channel("webhook_logs_changes")
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "webhook_logs",
+          filter: userId
+            ? tokenId
+              ? `token_id=eq.${tokenId}`
+              : `user_id=eq.${userId}`
+            : undefined,
         },
         (payload) => {
-          const newLog = payload.new as WebhookLog;
+          if (payload.new.user_id === userId) {
+            const newLog = payload.new as WebhookLog;
 
-          // When a new record is inserted, add it to the logs array
-          setLogs((currentLogs) => [newLog, ...currentLogs]);
+            // When a new record is inserted, add it to the logs array
+            setLogs((currentLogs) => [newLog, ...currentLogs]);
 
-          // If follow latest is enabled or no log is selected, select the new one
-          if (followLatest || !selectedLog) {
-            setSelectedLog(newLog);
+            // If follow latest is enabled or no log is selected, select the new one
+            if (followLatest || !selectedLog) {
+              setSelectedLog(newLog);
+            }
+
+            setLastRefreshed(new Date());
+
+            // Notify user of new webhook
+            toast.success(`New webhook received`, {
+              description: tokenId
+                ? `New log for selected token`
+                : `New webhook log received`,
+            });
           }
-
-          setLastRefreshed(new Date());
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(
+          `Realtime subscription status: ${status} for channel ${channelName}`
+        );
+      });
 
     return () => {
       // Clean up subscription when component unmounts or isRealtimeEnabled changes
       supabase.removeChannel(subscription);
     };
-  }, [isRealtimeEnabled, followLatest, selectedLog]);
+  }, [isRealtimeEnabled, followLatest, selectedLog, userId, tokenId]);
 
   const selectLog = useCallback(
     (log: WebhookLog) => {
@@ -302,6 +367,17 @@ export default function LogsDisplay() {
 
   // Render main content area with webhook details
   const renderWebhookDetails = () => {
+    if (logs.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-[600px] bg-slate-50 rounded-md">
+          <div className="text-center">
+            <Info className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-500">No webhook logs available</p>
+          </div>
+        </div>
+      );
+    }
+
     if (!selectedLog) {
       return (
         <div className="flex items-center justify-center h-[600px] bg-slate-50 rounded-md">
