@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Webhook Logger
 
-## Getting Started
+A simple webhook logging server built with Next.js 15, TypeScript, and Supabase. It allows you to receive, log, and inspect webhook requests in real-time.
 
-First, run the development server:
+## Features
+
+- Captures webhook requests (GET, POST, PUT, DELETE, PATCH)
+- Logs request method, headers, body, source, and path
+- Real-time display of webhook logs
+- Detailed view for each log entry
+- Automatic polling for new logs
+- Built with Next.js 15, TypeScript, and Supabase
+
+## Setup
+
+1. Clone the repository:
+
+```bash
+git clone <repository-url>
+cd webhook-logger
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Set up Supabase:
+
+   - Create a new Supabase project at [https://supabase.com](https://supabase.com)
+   - Create a table named `webhook_logs` with the following schema:
+     ```sql
+     create table webhook_logs (
+       id uuid default uuid_generate_v4() primary key,
+       created_at timestamp with time zone default now(),
+       method text not null,
+       headers jsonb not null,
+       body jsonb,
+       source text,
+       path text
+     );
+     ```
+   - Copy your Supabase URL and anon key to `.env.local`:
+     ```
+     NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
+     NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+     ```
+
+4. Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Send webhook requests to any of these endpoints:
 
-## Learn More
+- `GET http://localhost:3000/api/webhook`
+- `POST http://localhost:3000/api/webhook`
+- `PUT http://localhost:3000/api/webhook`
+- `DELETE http://localhost:3000/api/webhook`
+- `PATCH http://localhost:3000/api/webhook`
 
-To learn more about Next.js, take a look at the following resources:
+All requests will be logged and displayed on the main page.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Example Webhook Test
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+You can use curl to test the webhook:
 
-## Deploy on Vercel
+```bash
+curl -X POST http://localhost:3000/api/webhook \
+  -H "Content-Type: application/json" \
+  -d '{"event":"test", "data":{"message":"Hello World"}}'
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT

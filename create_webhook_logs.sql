@@ -1,0 +1,1 @@
+create table webhook_logs (id uuid default uuid_generate_v4() primary key, created_at timestamp with time zone default now(), method text not null, headers jsonb not null, body jsonb, source text, path text);
