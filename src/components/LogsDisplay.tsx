@@ -1,9 +1,21 @@
 "use client";
 
-import { WebhookLog, supabase, getCurrentUser } from "@/lib/supabase";
+import {
+  WebhookLog,
+  supabase,
+  getCurrentUser,
+  UserWebhook,
+} from "@/lib/supabase";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Tooltip,
   TooltipContent,
@@ -12,20 +24,30 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, RefreshCw, Info, Loader2 } from "lucide-react";
+import { RefreshCw, Info, Loader2, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { CodeBlock } from "@/components/ui/code-block";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface LogsDisplayProps {
   tokenId?: string;
+  webhooks?: UserWebhook[];
 }
 
-export default function LogsDisplay({ tokenId }: LogsDisplayProps = {}) {
+export default function LogsDisplay({
+  tokenId,
+  webhooks = [],
+}: LogsDisplayProps) {
+  const router = useRouter();
   const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +57,39 @@ export default function LogsDisplay({ tokenId }: LogsDisplayProps = {}) {
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState("body");
   const [userId, setUserId] = useState<string | null>(null);
+  const [selectedTokenId, setSelectedTokenId] = useState<string | undefined>(
+    tokenId
+  );
   const isFirstLoad = useRef(true);
+
+  // Load settings from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem("webhookLoggerSettings");
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      setIsRealtimeEnabled(settings.enableRealtime);
+      setFollowLatest(settings.autoRefresh);
+    }
+  }, []);
+
+  // Update selected token when tokenId prop changes
+  useEffect(() => {
+    setSelectedTokenId(tokenId);
+  }, [tokenId]);
+
+  // Listen for settings changes
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "webhookLoggerSettings" && e.newValue) {
+        const settings = JSON.parse(e.newValue);
+        setIsRealtimeEnabled(settings.enableRealtime);
+        setFollowLatest(settings.autoRefresh);
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   // Check if user is authenticated
   useEffect(() => {
@@ -68,8 +122,8 @@ export default function LogsDisplay({ tokenId }: LogsDisplayProps = {}) {
       }
 
       // If a specific token is selected, filter logs by token_id
-      if (tokenId) {
-        query = query.eq("token_id", tokenId);
+      if (selectedTokenId) {
+        query = query.eq("token_id", selectedTokenId);
       }
 
       const { data, error } = await query;
@@ -90,33 +144,29 @@ export default function LogsDisplay({ tokenId }: LogsDisplayProps = {}) {
     } finally {
       setLoading(false);
     }
-  }, [userId, tokenId]);
+  }, [userId, selectedTokenId]);
 
   // Initial data fetch - only run once on component mount or when userId or tokenId changes
   useEffect(() => {
     const loadData = async () => {
       const data = await fetchLogs();
 
-      // Select the first log by default if there are logs and none are currently selected
-      // or if follow latest is enabled
-      if (
-        data.length > 0 &&
-        (followLatest || !selectedLog || isFirstLoad.current)
-      ) {
+      // Always select the first log if data is available
+      if (data.length > 0) {
         setSelectedLog(data[0]);
         isFirstLoad.current = false;
       }
     };
 
     loadData();
-  }, [userId, tokenId, fetchLogs]);
+  }, [userId, selectedTokenId, fetchLogs]);
 
   // Setup realtime subscription
   useEffect(() => {
     if (!isRealtimeEnabled) return;
     // Create a unique channel name based on the token ID
-    const channelName = tokenId
-      ? `webhook_logs_token_${tokenId}`
+    const channelName = selectedTokenId
+      ? `webhook_logs_token_${selectedTokenId}`
       : "webhook_logs_changes";
 
     const subscription = supabase
@@ -128,8 +178,8 @@ export default function LogsDisplay({ tokenId }: LogsDisplayProps = {}) {
           schema: "public",
           table: "webhook_logs",
           filter: userId
-            ? tokenId
-              ? `token_id=eq.${tokenId}`
+            ? selectedTokenId
+              ? `token_id=eq.${selectedTokenId}`
               : `user_id=eq.${userId}`
             : undefined,
         },
@@ -149,7 +199,7 @@ export default function LogsDisplay({ tokenId }: LogsDisplayProps = {}) {
 
             // Notify user of new webhook
             toast.success(`New webhook received`, {
-              description: tokenId
+              description: selectedTokenId
                 ? `New log for selected token`
                 : `New webhook log received`,
             });
@@ -166,7 +216,7 @@ export default function LogsDisplay({ tokenId }: LogsDisplayProps = {}) {
       // Clean up subscription when component unmounts or isRealtimeEnabled changes
       supabase.removeChannel(subscription);
     };
-  }, [isRealtimeEnabled, followLatest, selectedLog, userId, tokenId]);
+  }, [isRealtimeEnabled, followLatest, selectedLog, userId, selectedTokenId]);
 
   const selectLog = useCallback(
     (log: WebhookLog) => {
@@ -184,26 +234,46 @@ export default function LogsDisplay({ tokenId }: LogsDisplayProps = {}) {
     [followLatest]
   );
 
-  const toggleRealtime = useCallback(() => {
-    setIsRealtimeEnabled((prev) => !prev);
-  }, []);
-
-  const toggleFollowLatest = useCallback(() => {
-    setFollowLatest((prev) => {
-      const newValue = !prev;
-
-      // If enabling follow latest, immediately select the most recent log
-      if (newValue && logs.length > 0) {
-        setSelectedLog(logs[0]);
-      }
-
-      return newValue;
-    });
-  }, [logs]);
-
   const handleManualRefresh = useCallback(() => {
     fetchLogs();
   }, [fetchLogs]);
+
+  const handleTokenFilterChange = useCallback(
+    (value: string) => {
+      // Reset selected log when changing token
+      setSelectedLog(null);
+      const newTokenId = value === "all" ? undefined : value;
+      setSelectedTokenId(newTokenId);
+
+      // Update URL with query parameter
+      if (newTokenId) {
+        router.push(`/dashboard?id=${newTokenId}`);
+      } else {
+        router.push("/dashboard");
+      }
+
+      // Refresh logs with new token filter and select first log
+      setTimeout(async () => {
+        const data = await fetchLogs();
+        // Select the first log if available
+        if (data.length > 0) {
+          setSelectedLog(data[0]);
+        }
+      }, 0);
+
+      // Show toast notification
+      const tokenName = newTokenId
+        ? webhooks.find((w) => w.id === newTokenId)?.name || "selected token"
+        : "all tokens";
+
+      toast.info(`Showing logs for ${tokenName}`, {
+        description: newTokenId
+          ? `Filtered to show logs for: ${tokenName}`
+          : "Showing logs from all webhook tokens",
+      });
+    },
+    [fetchLogs, router, webhooks]
+  );
 
   // Format the last refreshed timestamp
   const formatLastRefreshed = () => {
@@ -227,71 +297,6 @@ export default function LogsDisplay({ tokenId }: LogsDisplayProps = {}) {
       default:
         return "outline";
     }
-  };
-
-  // Render refresh controls
-  const renderRefreshControls = () => {
-    return (
-      <Card className="mb-6">
-        <CardHeader className="py-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Clock className="h-4 w-4 text-blue-500" />
-            Realtime Settings
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="realtime"
-                  checked={isRealtimeEnabled}
-                  onCheckedChange={toggleRealtime}
-                />
-                <Label htmlFor="realtime">Realtime updates</Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="follow-latest"
-                  checked={followLatest}
-                  onCheckedChange={toggleFollowLatest}
-                />
-                <Label htmlFor="follow-latest">Auto-follow latest</Label>
-              </div>
-            </div>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={handleManualRefresh}
-                    variant="outline"
-                    size="sm"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Refreshing...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Refresh Now
-                      </>
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Last updated: {formatLastRefreshed()}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </CardContent>
-      </Card>
-    );
   };
 
   // Render sidebar with log list
@@ -418,7 +423,7 @@ export default function LogsDisplay({ tokenId }: LogsDisplayProps = {}) {
           <TabsContent value="body" className="mt-4">
             <Card>
               <CardContent className="py-2">
-                <ScrollArea className="h-[400px]">
+                <ScrollArea className="h-full">
                   <CodeBlock
                     code={
                       selectedLog.body
@@ -438,7 +443,7 @@ export default function LogsDisplay({ tokenId }: LogsDisplayProps = {}) {
           <TabsContent value="headers" className="mt-4">
             <Card>
               <CardContent className="py-2">
-                <ScrollArea className="h-[400px]">
+                <ScrollArea className="h-full">
                   <div className="space-y-2">
                     {selectedLog.headers &&
                     Object.keys(selectedLog.headers).length > 0 ? (
@@ -469,21 +474,82 @@ export default function LogsDisplay({ tokenId }: LogsDisplayProps = {}) {
   };
 
   return (
-    <div className="space-y-6">
-      {renderRefreshControls()}
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Activity className="w-5 h-5 text-blue-600" />
+          Webhook Logs
+        </CardTitle>
+        <CardDescription>
+          View and monitor incoming webhook requests
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-1">
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div className="flex items-center gap-3 flex-1">
+                  <Select
+                    value={selectedTokenId || "all"}
+                    onValueChange={handleTokenFilterChange}
+                  >
+                    <SelectTrigger className="w-full h-9 text-sm bg-white border-slate-200 hover:bg-slate-50 transition-colors">
+                      <SelectValue placeholder="All webhooks" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      <SelectItem
+                        value="all"
+                        className="font-medium text-blue-600"
+                      >
+                        All webhooks
+                      </SelectItem>
+                      {webhooks.map((webhook) => (
+                        <SelectItem
+                          key={webhook.id}
+                          value={webhook.id || ""}
+                          className="text-sm py-2.5"
+                        >
+                          {webhook.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleManualRefresh}
+                        variant="outline"
+                        size="sm"
+                        className="h-9 bg-white border-slate-200 hover:bg-slate-50 transition-colors"
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="h-4 w-4 text-blue-500" />
+                          </>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-800 text-white">
+                      <p>Last updated: {formatLastRefreshed()}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </CardHeader>
+              <CardContent className="py-2">{renderSidebar()}</CardContent>
+            </Card>
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-1">
-          <Card>
-            <CardHeader className="py-2">
-              <CardTitle className="text-sm">Recent Webhooks</CardTitle>
-            </CardHeader>
-            <CardContent className="py-2">{renderSidebar()}</CardContent>
-          </Card>
+          <div className="md:col-span-2">{renderWebhookDetails()}</div>
         </div>
-
-        <div className="md:col-span-2">{renderWebhookDetails()}</div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,4 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserWebhook } from "@/lib/supabase";
 import {
@@ -9,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import CodeExamples from "./CodeExamples";
+import { BookOpen } from "lucide-react";
 
 interface GuideTabProps {
   webhooks: UserWebhook[];
@@ -30,7 +37,13 @@ export default function GuideTab({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Using Your Webhook Logger</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-blue-600" />
+          Using Your Webhook Logger
+        </CardTitle>
+        <CardDescription>
+          Learn how to integrate and use webhook endpoints in your applications
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
@@ -43,7 +56,7 @@ export default function GuideTab({
           <div className="flex items-center gap-3">
             <div className="bg-blue-50 p-1 rounded-md flex-1">
               <code className="font-mono text-sm text-blue-600 px-2 py-1 rounded-md">
-              X-Webhook-Token: <b>{selectedToken}</b>
+                X-Webhook-Token: <b>{selectedToken}</b>
               </code>
             </div>
             <Select onValueChange={handleTokenSelect} value={selectedToken}>

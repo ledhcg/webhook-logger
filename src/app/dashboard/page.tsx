@@ -8,11 +8,13 @@ import { getUserWebhooks, UserWebhook } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Activity, Key, BookOpen, Settings } from "lucide-react";
 
 // Import components
 import WebhookTokensTab from "./_components/WebhookTokensTab";
 import LogsFilterTab from "./_components/LogsFilterTab";
 import GuideTab from "./_components/GuideTab";
+import SettingsTab from "./_components/SettingsTab";
 
 export default function DashboardPage() {
   const { user, isLoading: authLoading, signOut } = useAuth();
@@ -97,10 +99,23 @@ export default function DashboardPage() {
         </div>
 
         <Tabs defaultValue="logs" className="mb-8">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="logs">Webhook Logs</TabsTrigger>
-            <TabsTrigger value="webhooks">Webhook Tokens</TabsTrigger>
-            <TabsTrigger value="guide">Guide</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="logs" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              <span>Webhook Logs</span>
+            </TabsTrigger>
+            <TabsTrigger value="webhooks" className="flex items-center gap-2">
+              <Key className="h-4 w-4" />
+              <span>Webhook Tokens</span>
+            </TabsTrigger>
+            <TabsTrigger value="guide" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              <span>Guide</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span>Settings</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="webhooks" className="mt-6">
@@ -127,6 +142,10 @@ export default function DashboardPage() {
               selectedToken={selectedToken}
               setSelectedToken={handleTokenSelect}
             />
+          </TabsContent>
+
+          <TabsContent value="settings" className="mt-6">
+            <SettingsTab />
           </TabsContent>
         </Tabs>
       </div>
