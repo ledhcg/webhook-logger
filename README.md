@@ -50,6 +50,7 @@ npm install
      ```
      NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
      NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+     NEXT_PUBLIC_APP_URL=your_domain_here_or_http://localhost:3000
      ```
 
 4. Run the development server:
@@ -62,13 +63,15 @@ npm run dev
 
 ## Usage
 
+The application uses the `NEXT_PUBLIC_APP_URL` environment variable to determine the base URL for webhook endpoints. By default, it will use `http://localhost:3000` if not provided.
+
 Send webhook requests to any of these endpoints:
 
-- `GET http://localhost:3000/api/webhook`
-- `POST http://localhost:3000/api/webhook`
-- `PUT http://localhost:3000/api/webhook`
-- `DELETE http://localhost:3000/api/webhook`
-- `PATCH http://localhost:3000/api/webhook`
+- `GET ${your_domain}/api/webhook`
+- `POST ${your_domain}/api/webhook`
+- `PUT ${your_domain}/api/webhook`
+- `DELETE ${your_domain}/api/webhook`
+- `PATCH ${your_domain}/api/webhook`
 
 All requests will be logged and displayed on the main page.
 
@@ -77,10 +80,12 @@ All requests will be logged and displayed on the main page.
 You can use curl to test the webhook:
 
 ```bash
-curl -X POST http://localhost:3000/api/webhook \
+curl -X POST ${your_domain}/api/webhook \
   -H "Content-Type: application/json" \
   -d '{"event":"test", "data":{"message":"Hello World"}}'
 ```
+
+Where `${your_domain}` is the value of your `NEXT_PUBLIC_APP_URL` environment variable.
 
 ## License
 
