@@ -25,19 +25,3 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ success: true });
 }
-
-export async function GET(request: NextRequest) {
-  return NextResponse.json({ success: true });
-}
-
-export async function PUT(request: NextRequest) {
-  return await POST(request);
-}
-
-export async function DELETE(request: NextRequest) {
-  return await POST(request);
-}
-
-export async function PATCH(request: NextRequest) {
-  return await POST(request);
-}

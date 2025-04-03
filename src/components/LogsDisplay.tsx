@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Clock, RefreshCw, Info, ExternalLink, Loader2 } from "lucide-react";
 
 export default function LogsDisplay() {
   const [logs, setLogs] = useState<WebhookLog[]>([]);
@@ -146,21 +147,9 @@ export default function LogsDisplay() {
   const renderRefreshControls = () => {
     return (
       <Card className="mb-6">
-        <CardHeader className="pb-3">
+        <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 text-blue-500"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
+            <Clock className="h-4 w-4 text-blue-500" />
             Realtime Settings
           </CardTitle>
         </CardHeader>
@@ -188,44 +177,12 @@ export default function LogsDisplay() {
                   >
                     {loading ? (
                       <>
-                        <svg
-                          className="animate-spin h-4 w-4 mr-2"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         Refreshing...
                       </>
                     ) : (
                       <>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 mr-2"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="1 4 1 10 7 10"></polyline>
-                          <polyline points="23 20 23 14 17 14"></polyline>
-                          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-                        </svg>
+                        <RefreshCw className="h-4 w-4 mr-2" />
                         Refresh Now
                       </>
                     )}
@@ -268,20 +225,7 @@ export default function LogsDisplay() {
     if (logs.length === 0) {
       return (
         <Alert className="bg-amber-50 border-amber-200">
-          <svg
-            className="h-4 w-4 text-amber-600"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
+          <Info className="h-4 w-4 text-amber-600" />
           <AlertTitle>No logs found</AlertTitle>
           <AlertDescription>
             Send a webhook request to any of the supported endpoints to see logs
@@ -331,20 +275,7 @@ export default function LogsDisplay() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button variant="ghost" size="sm">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                            <polyline points="15 3 21 3 21 9"></polyline>
-                            <line x1="10" y1="14" x2="21" y2="3"></line>
-                          </svg>
+                          <ExternalLink className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
