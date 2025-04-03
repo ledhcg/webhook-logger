@@ -8,7 +8,7 @@ A simple webhook logging server built with Next.js 15, TypeScript, and Supabase.
 - Logs request method, headers, body, source, and path
 - Real-time display of webhook logs
 - Detailed view for each log entry
-- Automatic polling for new logs
+- Real-time updates with Supabase Realtime
 - Built with Next.js 15, TypeScript, and Supabase
 
 ## Setup
@@ -41,6 +41,11 @@ npm install
        path text
      );
      ```
+   - Enable Realtime for the `webhook_logs` table:
+     - Go to your Supabase Dashboard
+     - Navigate to Table Editor, select the "webhook_logs" table
+     - Look for the "Realtime" toggle (it shows "Realtime off" by default)
+     - Click to toggle it to "Realtime on"
    - Copy your Supabase URL and anon key to `.env.local`:
      ```
      NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here

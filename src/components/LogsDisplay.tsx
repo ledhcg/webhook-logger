@@ -1,6 +1,6 @@
 "use client";
 
-import { WebhookLog } from "@/lib/supabase";
+import { WebhookLog, supabase } from "@/lib/supabase";
 import { useState, useEffect } from "react";
 import LogModal from "./LogModal";
 import { Button } from "@/components/ui/button";
@@ -21,13 +21,6 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -47,21 +40,23 @@ export default function LogsDisplay() {
   const [error, setError] = useState<string | null>(null);
   const [selectedLog, setSelectedLog] = useState<WebhookLog | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [refreshInterval, setRefreshInterval] = useState<number>(5000); // Default: 5 seconds
-  const [isPolling, setIsPolling] = useState<boolean>(true);
+  const [isRealtimeEnabled, setIsRealtimeEnabled] = useState<boolean>(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/logs");
-      const data = await response.json();
+      const { data, error } = await supabase
+        .from("webhook_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch logs");
+      if (error) {
+        throw new Error(error.message || "Failed to fetch logs");
       }
 
-      setLogs(data.logs || []);
+      setLogs(data || []);
       setLastRefreshed(new Date());
       setError(null);
     } catch (err) {
@@ -74,16 +69,36 @@ export default function LogsDisplay() {
   useEffect(() => {
     fetchLogs();
 
-    let interval: NodeJS.Timeout | null = null;
-
-    if (isPolling) {
-      interval = setInterval(fetchLogs, refreshInterval);
-    }
+    // Set up realtime subscription
+    const subscription = isRealtimeEnabled
+      ? supabase
+          .channel("webhook_logs_changes")
+          .on(
+            "postgres_changes",
+            {
+              event: "INSERT",
+              schema: "public",
+              table: "webhook_logs",
+            },
+            (payload) => {
+              // When a new record is inserted, add it to the logs array
+              setLogs((currentLogs) => [
+                payload.new as WebhookLog,
+                ...currentLogs,
+              ]);
+              setLastRefreshed(new Date());
+            }
+          )
+          .subscribe()
+      : null;
 
     return () => {
-      if (interval) clearInterval(interval);
+      // Clean up subscription when component unmounts
+      if (subscription) {
+        supabase.removeChannel(subscription);
+      }
     };
-  }, [refreshInterval, isPolling]);
+  }, [isRealtimeEnabled]);
 
   const openLogDetails = (log: WebhookLog) => {
     setSelectedLog(log);
@@ -94,12 +109,8 @@ export default function LogsDisplay() {
     setIsModalOpen(false);
   };
 
-  const handleRefreshIntervalChange = (value: string) => {
-    setRefreshInterval(Number(value));
-  };
-
-  const togglePolling = () => {
-    setIsPolling(!isPolling);
+  const toggleRealtime = () => {
+    setIsRealtimeEnabled(!isRealtimeEnabled);
   };
 
   const handleManualRefresh = () => {
@@ -150,7 +161,7 @@ export default function LogsDisplay() {
               <circle cx="12" cy="12" r="10"></circle>
               <polyline points="12 6 12 12 16 14"></polyline>
             </svg>
-            Auto-Refresh Settings
+            Realtime Settings
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -158,37 +169,11 @@ export default function LogsDisplay() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <div className="flex items-center space-x-2">
                 <Switch
-                  id="auto-refresh"
-                  checked={isPolling}
-                  onCheckedChange={togglePolling}
+                  id="realtime"
+                  checked={isRealtimeEnabled}
+                  onCheckedChange={toggleRealtime}
                 />
-                <Label htmlFor="auto-refresh">Auto-refresh</Label>
-              </div>
-
-              <Separator
-                className="hidden sm:block h-4 mx-2 bg-slate-200"
-                orientation="vertical"
-              />
-
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="refreshInterval">Interval:</Label>
-                <Select
-                  value={refreshInterval.toString()}
-                  onValueChange={handleRefreshIntervalChange}
-                  disabled={!isPolling}
-                >
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Select interval" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1000">1 second</SelectItem>
-                    <SelectItem value="3000">3 seconds</SelectItem>
-                    <SelectItem value="5000">5 seconds</SelectItem>
-                    <SelectItem value="10000">10 seconds</SelectItem>
-                    <SelectItem value="30000">30 seconds</SelectItem>
-                    <SelectItem value="60000">1 minute</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="realtime">Realtime updates</Label>
               </div>
             </div>
 
