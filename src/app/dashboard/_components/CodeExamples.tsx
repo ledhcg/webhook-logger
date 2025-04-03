@@ -15,7 +15,7 @@ export default function CodeExamples({ selectedToken }: CodeExamplesProps) {
   >("javascript");
 
   return (
-    <Tabs defaultValue="nodejs" className="mb-8 mt-6">
+    <Tabs defaultValue="nodejs" className="m-6 mb-2 mt-2">
       <TabsList className="grid grid-cols-3">
         <TabsTrigger value="nodejs">Node.js</TabsTrigger>
         <TabsTrigger value="python">Python</TabsTrigger>
@@ -24,18 +24,10 @@ export default function CodeExamples({ selectedToken }: CodeExamplesProps) {
 
       {/* Node.js Example */}
       <TabsContent value="nodejs" className="mt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Cpu className="w-5 h-5 text-green-600" />
-              Node.js Examples
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-80 rounded-md border">
-              {nodejsLanguage === "javascript" ? (
-                <CodeBlock
-                  code={`// Using fetch API (Node.js 18+)
+        <ScrollArea className="h-80 rounded-md border">
+          {nodejsLanguage === "javascript" ? (
+            <CodeBlock
+              code={`// Using fetch API (Node.js 18+)
 const sendWebhook = async () => {
   try {
     const response = await fetch('${
@@ -70,8 +62,8 @@ sendWebhook();
 const axios = require('axios');
 
 axios.post('${
-                    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-                  }/api/webhook', {
+                process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+              }/api/webhook', {
   event: 'user.created',
   data: {
     userId: '123',
@@ -86,18 +78,18 @@ axios.post('${
 })
 .then(response => console.log('Webhook sent successfully:', response.data))
 .catch(error => console.error('Error sending webhook:', error));`}
-                  language="javascript"
-                  showLanguage={true}
-                  filename="node_example.js"
-                  enableLanguageSwitcher={true}
-                  availableLanguages={["javascript", "typescript"]}
-                  onLanguageChange={(lang) => {
-                    setNodejsLanguage(lang as "javascript" | "typescript");
-                  }}
-                />
-              ) : (
-                <CodeBlock
-                  code={`// Using fetch API (Node.js 18+ with TypeScript)
+              language="javascript"
+              showLanguage={true}
+              filename="node_example.js"
+              enableLanguageSwitcher={true}
+              availableLanguages={["javascript", "typescript"]}
+              onLanguageChange={(lang) => {
+                setNodejsLanguage(lang as "javascript" | "typescript");
+              }}
+            />
+          ) : (
+            <CodeBlock
+              code={`// Using fetch API (Node.js 18+ with TypeScript)
 interface WebhookData {
   event: string;
   data: {
@@ -145,8 +137,8 @@ sendWebhook();
 import axios from 'axios';
 
 axios.post<WebhookResponse>('${
-                    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-                  }/api/webhook', {
+                process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+              }/api/webhook', {
   event: 'user.created',
   data: {
     userId: '123',
@@ -161,42 +153,32 @@ axios.post<WebhookResponse>('${
 })
 .then(response => console.log('Webhook sent successfully:', response.data))
 .catch((error: unknown) => console.error('Error sending webhook:', error));`}
-                  language="typescript"
-                  showLanguage={true}
-                  filename="node_example.ts"
-                  enableLanguageSwitcher={true}
-                  availableLanguages={["javascript", "typescript"]}
-                  onLanguageChange={(lang) => {
-                    setNodejsLanguage(lang as "javascript" | "typescript");
-                  }}
-                />
-              )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+              language="typescript"
+              showLanguage={true}
+              filename="node_example.ts"
+              enableLanguageSwitcher={true}
+              availableLanguages={["javascript", "typescript"]}
+              onLanguageChange={(lang) => {
+                setNodejsLanguage(lang as "javascript" | "typescript");
+              }}
+            />
+          )}
+        </ScrollArea>
       </TabsContent>
 
       {/* Python Example */}
       <TabsContent value="python" className="mt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Cpu className="w-5 h-5 text-blue-600" />
-              Python Examples
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-80 rounded-md border">
-              <CodeBlock
-                code={`# Using requests library
+        <ScrollArea className="h-80 rounded-md border">
+          <CodeBlock
+            code={`# Using requests library
 # pip install requests
 
 import requests
 import json
 
 url = '${
-                  process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-                }/api/webhook'
+              process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+            }/api/webhook'
 headers = {
     'Content-Type': 'application/json',
     'X-Webhook-Token': '${selectedToken}',
@@ -214,31 +196,21 @@ payload = {
 response = requests.post(url, headers=headers, data=json.dumps(payload))
 print(f"Status Code: {response.status_code}")
 print(f"Response: {response.json()}")`}
-                language="python"
-                showLanguage={true}
-                filename="python_example.py"
-              />
-            </ScrollArea>
-          </CardContent>
-        </Card>
+            language="python"
+            showLanguage={true}
+            filename="python_example.py"
+          />
+        </ScrollArea>
       </TabsContent>
 
       {/* cURL Example */}
       <TabsContent value="curl" className="mt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Square className="w-5 h-5 text-gray-600" />
-              cURL Examples
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-80 rounded-md border">
-              <CodeBlock
-                code={`# Basic POST request
+        <ScrollArea className="h-80 rounded-md border">
+          <CodeBlock
+            code={`# Basic POST request
 curl -X POST ${
-                  process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-                }/api/webhook \\
+              process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+            }/api/webhook \\
   -H "Content-Type: application/json" \\
   -H "X-Webhook-Token: ${selectedToken}" \\
   -H "X-Custom-Header: Custom Value" \\
@@ -249,13 +221,11 @@ curl -X POST ${
       "email": "example@example.com"
     }
   }'`}
-                language="bash"
-                showLanguage={true}
-                filename="curl_example.sh"
-              />
-            </ScrollArea>
-          </CardContent>
-        </Card>
+            language="bash"
+            showLanguage={true}
+            filename="curl_example.sh"
+          />
+        </ScrollArea>
       </TabsContent>
     </Tabs>
   );
