@@ -14,7 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Webhook Logger - Inspect and Debug Webhook Requests",
-  description: "A simple tool to receive, log and inspect webhook requests from any service",
+  description:
+    "A simple tool to receive, log and inspect webhook requests from any service",
   keywords: "webhook, logger, debug, inspect, requests, developer tool",
 };
 

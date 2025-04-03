@@ -1,4 +1,13 @@
 import LogsDisplayWrapper from "../components/LogsDisplayWrapper";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function Home() {
   return (
@@ -17,8 +26,8 @@ export default function Home() {
 
       {/* Main content */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 pb-16">
-        <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-          {/* Instructions section */}
+        <Card className="shadow-lg border-slate-200">
+          {/* Instructions section with link to guide */}
           <div className="p-6 md:p-8 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50">
             <h2 className="text-xl font-semibold mb-4 text-slate-800 flex items-center">
               <svg
@@ -35,39 +44,44 @@ export default function Home() {
                 <line x1="12" y1="16" x2="12" y2="12"></line>
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
               </svg>
-              How to use
+              Quick Start
             </h2>
-            <div className="text-slate-700 space-y-3">
-              <p>
+            <div className="text-slate-700">
+              <p className="mb-2">
                 Send webhooks to this server using any of the following
                 endpoints:
               </p>
-              <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm overflow-auto">
-                <code className="block font-mono text-sm mb-2">
-                  <span className="text-green-600 font-semibold">GET</span>{" "}
-                  /api/webhook
-                </code>
-                <code className="block font-mono text-sm mb-2">
-                  <span className="text-blue-600 font-semibold">POST</span>{" "}
-                  /api/webhook
-                </code>
-                <code className="block font-mono text-sm mb-2">
-                  <span className="text-orange-600 font-semibold">PUT</span>{" "}
-                  /api/webhook
-                </code>
-                <code className="block font-mono text-sm mb-2">
-                  <span className="text-red-600 font-semibold">DELETE</span>{" "}
-                  /api/webhook
-                </code>
-                <code className="block font-mono text-sm">
-                  <span className="text-purple-600 font-semibold">PATCH</span>{" "}
-                  /api/webhook
-                </code>
+              <Card className="mb-4">
+                <CardContent className="p-4">
+                  <code className="block font-mono text-sm mb-2">
+                    <span className="text-blue-600 font-semibold">POST</span>{" "}
+                    /api/webhook
+                  </code>
+                  <code className="block font-mono text-sm">
+                    <span className="text-green-600 font-semibold">GET</span>{" "}
+                    /api/webhook
+                  </code>
+                </CardContent>
+              </Card>
+              <div className="flex justify-center">
+                <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                  <Link href="/guide">
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 5v14M19 12l-7 7-7-7" />
+                    </svg>
+                    View Complete Usage Guide
+                  </Link>
+                </Button>
               </div>
-              <p className="text-sm text-slate-600 mt-3">
-                All requests, headers, and payloads will be logged and displayed
-                below in real-time.
-              </p>
             </div>
           </div>
 
@@ -90,7 +104,7 @@ export default function Home() {
             </h2>
             <LogsDisplayWrapper />
           </div>
-        </div>
+        </Card>
 
         {/* Footer */}
         <footer className="mt-12 text-center text-sm text-slate-500">
