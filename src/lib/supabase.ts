@@ -16,7 +16,7 @@ export type WebhookLog = {
   created_at?: string;
   method: string;
   headers: Record<string, string>;
-  body: any;
+  body: Record<string, unknown>;
   source: string;
   path: string;
   status_code?: number;
