@@ -50,15 +50,18 @@ export async function POST(request: NextRequest) {
     token_id: tokenId,
   };
 
-  try {
-    await supabase.from("webhook_logs").insert(log);
-  } catch (error) {
-    console.error("Error saving webhook log:", error);
-    return NextResponse.json(
-      { error: "Failed to save webhook log" },
-      { status: 500 }
-    );
-  }
+  // Insert the log asynchronously (don't wait for completion)
+  supabase
+    .from("webhook_logs")
+    .insert(log)
+    .then(({ error }) => {
+      if (error) {
+        console.error("Error saving webhook log asynchronously:", error);
+        // Optional: Add more robust error handling here if needed,
+        // e.g., send to an error tracking service.
+      }
+    });
 
+  // Return success immediately
   return NextResponse.json({ success: true });
 }
