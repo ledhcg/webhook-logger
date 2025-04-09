@@ -1,6 +1,20 @@
 import { supabase, supabaseService, WebhookLog } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 
+// Helper function to set CORS headers
+export function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Webhook-Token",
+  };
+}
+
+// Handle OPTIONS request for CORS preflight
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders() });
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const headers: Record<string, string> = {};
@@ -16,7 +30,7 @@ export async function POST(request: NextRequest) {
   if (!webhookToken) {
     return NextResponse.json(
       { error: "Webhook token is required" },
-      { status: 401 }
+      { status: 401, headers: corsHeaders() }
     );
   }
   console.log("webhookToken", webhookToken);
@@ -33,7 +47,7 @@ export async function POST(request: NextRequest) {
   if (error || !webhookData) {
     return NextResponse.json(
       { error: "Invalid webhook token" },
-      { status: 401 }
+      { status: 401, headers: corsHeaders() }
     );
   }
 
@@ -62,6 +76,6 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  // Return success immediately
-  return NextResponse.json({ success: true });
+  // Return success with CORS headers
+  return NextResponse.json({ success: true }, { headers: corsHeaders() });
 }
