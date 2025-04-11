@@ -677,32 +677,34 @@ export default function LogsDisplay({
                     </SelectContent>
                   </Select>
                 </div>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={handleManualRefresh}
-                        variant="outline"
-                        size="sm"
-                        className="h-9 bg-white border-slate-200 hover:bg-slate-50 transition-colors"
-                        disabled={loading}
-                      >
-                        {loading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="h-4 w-4 text-blue-500" />
-                          </>
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-slate-800 text-white">
-                      <p>Last updated: {formatLastRefreshed()}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                {updateMode !== "realtime" && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={handleManualRefresh}
+                          variant="outline"
+                          size="sm"
+                          className="h-9 bg-white border-slate-200 hover:bg-slate-50 transition-colors"
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="h-4 w-4 text-blue-500" />
+                            </>
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-800 text-white">
+                        <p>Last updated: {formatLastRefreshed()}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </CardHeader>
               <CardContent className="py-2">{renderSidebar()}</CardContent>
             </Card>
