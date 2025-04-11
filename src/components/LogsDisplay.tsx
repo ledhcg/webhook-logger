@@ -27,15 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  RefreshCw,
-  Info,
-  Loader2,
-  Activity,
-  Zap,
-  Clock,
-  Hand,
-} from "lucide-react";
+import { RefreshCw, Info, Loader2, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { CodeBlock } from "@/components/ui/code-block";
 import {
