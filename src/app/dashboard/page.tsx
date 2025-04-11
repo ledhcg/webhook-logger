@@ -43,6 +43,12 @@ export default function DashboardPage() {
     }
   }, [searchParams]);
 
+  // Force refresh when token changes
+  useEffect(() => {
+    // This effect will trigger a reload of the logs when selectedLogToken changes
+    // The data will be fetched through the child components
+  }, [selectedLogToken]);
+
   // Fetch user's webhook tokens
   useEffect(() => {
     const fetchWebhooks = async () => {

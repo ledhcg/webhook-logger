@@ -8,7 +8,15 @@ interface LogsFilterTabProps {
 }
 
 export default function LogsFilterTab({
+  webhooks,
   selectedLogToken,
+  setSelectedLogToken,
 }: LogsFilterTabProps) {
-  return <LogsDisplayWrapper selectedTokenId={selectedLogToken} />;
+  return (
+    <LogsDisplayWrapper
+      selectedTokenId={selectedLogToken}
+      webhooks={webhooks}
+      onTokenChange={setSelectedLogToken}
+    />
+  );
 }

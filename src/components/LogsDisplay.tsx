@@ -27,7 +27,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RefreshCw, Info, Loader2, Activity } from "lucide-react";
+import {
+  RefreshCw,
+  Info,
+  Loader2,
+  Activity,
+  Zap,
+  Clock,
+  Hand,
+} from "lucide-react";
 import { toast } from "sonner";
 import { CodeBlock } from "@/components/ui/code-block";
 import {
@@ -37,22 +45,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { UpdateMode } from "@/app/dashboard/_components/SettingsTab";
 
 interface LogsDisplayProps {
   tokenId?: string;
   webhooks?: UserWebhook[];
+  onTokenChange?: (token: string | undefined) => void;
 }
 
 export default function LogsDisplay({
   tokenId,
   webhooks = [],
+  onTokenChange,
 }: LogsDisplayProps) {
   const router = useRouter();
   const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedLog, setSelectedLog] = useState<WebhookLog | null>(null);
-  const [isRealtimeEnabled, setIsRealtimeEnabled] = useState<boolean>(true);
   const [followLatest, setFollowLatest] = useState<boolean>(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState("body");
@@ -60,15 +70,65 @@ export default function LogsDisplay({
   const [selectedTokenId, setSelectedTokenId] = useState<string | undefined>(
     tokenId
   );
+  const [updateMode, setUpdateMode] = useState<UpdateMode>("realtime");
+  const [refreshInterval, setRefreshInterval] = useState<number>(5000);
+  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstLoad = useRef(true);
 
   // Load settings from localStorage
   useEffect(() => {
     const savedSettings = localStorage.getItem("webhookLoggerSettings");
     if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      setIsRealtimeEnabled(settings.enableRealtime);
-      setFollowLatest(settings.autoRefresh);
+      try {
+        const settings = JSON.parse(savedSettings);
+
+        // Support migration from old settings format
+        const updateModeValue =
+          settings.updateMode ||
+          (settings.enableRealtime
+            ? "realtime"
+            : settings.autoRefresh
+            ? "periodic"
+            : "manual");
+
+        const autoFollowValue =
+          settings.autoFollow !== undefined
+            ? settings.autoFollow
+            : settings.autoRefresh || true;
+
+        setUpdateMode(updateModeValue as UpdateMode);
+        setFollowLatest(autoFollowValue);
+        setRefreshInterval(settings.refreshInterval || 5000);
+      } catch (e) {
+        console.error("Error parsing settings:", e);
+        // Use defaults if parsing fails
+        const defaultSettings = {
+          updateMode: "realtime" as UpdateMode,
+          autoFollow: true,
+          refreshInterval: 5000,
+        };
+        localStorage.setItem(
+          "webhookLoggerSettings",
+          JSON.stringify(defaultSettings)
+        );
+        setUpdateMode(defaultSettings.updateMode);
+        setFollowLatest(defaultSettings.autoFollow);
+        setRefreshInterval(defaultSettings.refreshInterval);
+      }
+    } else {
+      // If no settings found, save default settings to localStorage
+      const defaultSettings = {
+        updateMode: "realtime" as UpdateMode,
+        autoFollow: true,
+        refreshInterval: 5000,
+      };
+      localStorage.setItem(
+        "webhookLoggerSettings",
+        JSON.stringify(defaultSettings)
+      );
+      setUpdateMode(defaultSettings.updateMode);
+      setFollowLatest(defaultSettings.autoFollow);
+      setRefreshInterval(defaultSettings.refreshInterval);
     }
   }, []);
 
@@ -81,15 +141,69 @@ export default function LogsDisplay({
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "webhookLoggerSettings" && e.newValue) {
-        const settings = JSON.parse(e.newValue);
-        setIsRealtimeEnabled(settings.enableRealtime);
-        setFollowLatest(settings.autoRefresh);
+        try {
+          const settings = JSON.parse(e.newValue);
+          const previousUpdateMode = updateMode;
+          const previousFollowLatest = followLatest;
+
+          // Support migration from old settings format
+          const updateModeValue =
+            settings.updateMode ||
+            (settings.enableRealtime
+              ? "realtime"
+              : settings.autoRefresh
+              ? "periodic"
+              : "manual");
+
+          const autoFollowValue =
+            settings.autoFollow !== undefined
+              ? settings.autoFollow
+              : settings.autoRefresh || true;
+
+          setUpdateMode(updateModeValue as UpdateMode);
+          setFollowLatest(autoFollowValue);
+          setRefreshInterval(settings.refreshInterval || 5000);
+
+          // Show notifications for changed settings
+          if (previousUpdateMode !== updateModeValue) {
+            const modeMessages: Record<UpdateMode, string> = {
+              realtime: "Realtime updates enabled",
+              periodic: "Periodic refresh enabled",
+              manual: "Manual updates only",
+            };
+
+            const modeDescriptions: Record<UpdateMode, string> = {
+              realtime: "You'll see new webhooks as they arrive in real-time",
+              periodic: `Logs will refresh every ${
+                settings.refreshInterval / 1000
+              } seconds`,
+              manual: "Logs will only update when you click refresh",
+            };
+
+            toast.info(modeMessages[updateModeValue as UpdateMode], {
+              description: modeDescriptions[updateModeValue as UpdateMode],
+            });
+          }
+
+          if (previousFollowLatest !== autoFollowValue) {
+            toast.info(
+              `Auto-follow ${autoFollowValue ? "enabled" : "disabled"}`,
+              {
+                description: autoFollowValue
+                  ? "New logs will be automatically selected"
+                  : "You'll need to manually select logs",
+              }
+            );
+          }
+        } catch (e) {
+          console.error("Error parsing settings change:", e);
+        }
       }
     };
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  }, [updateMode, followLatest]);
 
   // Check if user is authenticated
   useEffect(() => {
@@ -146,24 +260,50 @@ export default function LogsDisplay({
     }
   }, [userId, selectedTokenId]);
 
+  // Interval refresh timer
+  useEffect(() => {
+    // Clear any existing timer
+    if (refreshTimerRef.current) {
+      clearInterval(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+
+    // Only set interval if in periodic mode
+    if (updateMode === "periodic") {
+      refreshTimerRef.current = setInterval(fetchLogs, refreshInterval);
+
+      // Log to console
+      console.log(`Setting refresh interval to ${refreshInterval}ms`);
+    }
+
+    return () => {
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+    };
+  }, [updateMode, refreshInterval, fetchLogs]);
+
   // Initial data fetch - only run once on component mount or when userId or tokenId changes
   useEffect(() => {
     const loadData = async () => {
       const data = await fetchLogs();
 
-      // Always select the first log if data is available
-      if (data.length > 0) {
+      // Always select the first log if data is available and it's the first load
+      if (data.length > 0 && (isFirstLoad.current || followLatest)) {
         setSelectedLog(data[0]);
         isFirstLoad.current = false;
       }
     };
 
     loadData();
-  }, [userId, selectedTokenId, fetchLogs]);
+  }, [userId, selectedTokenId, fetchLogs, followLatest]);
 
   // Setup realtime subscription
   useEffect(() => {
-    if (!isRealtimeEnabled) return;
+    // Only setup realtime subscription if in realtime mode
+    if (updateMode !== "realtime") return;
+
     // Create a unique channel name based on the token ID
     const channelName = selectedTokenId
       ? `webhook_logs_token_${selectedTokenId}`
@@ -213,10 +353,10 @@ export default function LogsDisplay({
       });
 
     return () => {
-      // Clean up subscription when component unmounts or isRealtimeEnabled changes
+      // Clean up subscription when component unmounts or updateMode changes
       supabase.removeChannel(subscription);
     };
-  }, [isRealtimeEnabled, followLatest, selectedLog, userId, selectedTokenId]);
+  }, [updateMode, followLatest, selectedLog, userId, selectedTokenId]);
 
   const selectLog = useCallback(
     (log: WebhookLog) => {
@@ -224,6 +364,22 @@ export default function LogsDisplay({
       // When manually selecting a log, disable follow latest
       if (followLatest) {
         setFollowLatest(false);
+
+        // Save the updated setting to localStorage
+        const savedSettings = localStorage.getItem("webhookLoggerSettings");
+        if (savedSettings) {
+          try {
+            const settings = JSON.parse(savedSettings);
+            settings.autoFollow = false;
+            localStorage.setItem(
+              "webhookLoggerSettings",
+              JSON.stringify(settings)
+            );
+          } catch (e) {
+            console.error("Error updating settings", e);
+          }
+        }
+
         toast.info("Auto-follow disabled", {
           description:
             "You've manually selected a log, auto-follow has been disabled",
@@ -244,6 +400,11 @@ export default function LogsDisplay({
       setSelectedLog(null);
       const newTokenId = value === "all" ? undefined : value;
       setSelectedTokenId(newTokenId);
+
+      // Call the onTokenChange callback if provided
+      if (onTokenChange) {
+        onTokenChange(newTokenId);
+      }
 
       // Update URL with query parameter
       if (newTokenId) {
@@ -272,7 +433,7 @@ export default function LogsDisplay({
           : "Showing logs from all webhook tokens",
       });
     },
-    [fetchLogs, router, webhooks]
+    [fetchLogs, router, webhooks, onTokenChange]
   );
 
   // Format the last refreshed timestamp
