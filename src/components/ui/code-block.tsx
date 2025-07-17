@@ -266,7 +266,7 @@ export const CodeBlock = ({
         <Button
           variant="outline"
           size="icon"
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-slate-200 focus:opacity-100 focus:ring-2 focus:ring-slate-400"
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity z-10 hover:bg-slate-200 focus:ring-2 focus:ring-slate-400"
           onClick={copyToClipboard}
           aria-label="Copy code"
           type="button"

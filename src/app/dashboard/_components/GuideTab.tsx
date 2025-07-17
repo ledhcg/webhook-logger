@@ -1,3 +1,4 @@
+import { useCallback, memo } from "react";
 import {
   Card,
   CardContent,
@@ -23,16 +24,16 @@ interface GuideTabProps {
   setSelectedToken: (token: string) => void;
 }
 
-export default function GuideTab({
+function GuideTab({
   webhooks,
   selectedToken,
   setSelectedToken,
 }: GuideTabProps) {
   // Handle token selection
-  const handleTokenSelect = (tokenValue: string) => {
+  const handleTokenSelect = useCallback((tokenValue: string) => {
     setSelectedToken(tokenValue);
     // Replace the placeholder in code examples with the selected token
-  };
+  }, [setSelectedToken]);
 
   return (
     <Card>
@@ -115,3 +116,5 @@ export default function GuideTab({
     </Card>
   );
 }
+
+export default memo(GuideTab);

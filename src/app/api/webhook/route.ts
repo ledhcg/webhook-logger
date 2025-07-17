@@ -19,7 +19,6 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     );
   }
-  console.log("webhookToken", webhookToken);
   // Try to find the user associated with this token
   const { data: webhookData, error } = await supabaseService
     .from("user_webhooks")
@@ -27,7 +26,6 @@ export async function POST(request: NextRequest) {
     .eq("token", webhookToken)
     .single();
 
-  console.log("webhookData", webhookData);
 
   // If token is invalid, return an error
   if (error || !webhookData) {

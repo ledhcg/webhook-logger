@@ -59,8 +59,8 @@ export default function DashboardPage() {
         const webhooksData = await getUserWebhooks(user.id);
         setWebhooks(webhooksData);
         setError(null);
-      } catch (err) {
-        console.error("Error fetching webhooks:", err);
+      } catch {
+        // Error fetching webhooks
         setError("Failed to load webhook tokens");
       } finally {
         setIsLoading(false);

@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { AlertCircle, Mail, Lock } from "lucide-react";
+import { AlertCircle, Mail, Lock, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const handleEmailRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,9 +50,9 @@ export default function RegisterPage() {
           description: "Check your email to complete registration",
         });
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again later.");
-      console.error(err);
+      // Error handled above
     } finally {
       setIsLoading(false);
     }
@@ -96,9 +97,9 @@ export default function RegisterPage() {
           description: "Please check your email to confirm your account",
         });
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again later.");
-      console.error(err);
+      // Error handled above
     } finally {
       setIsLoading(false);
     }
@@ -144,9 +145,26 @@ export default function RegisterPage() {
                     type="email"
                     placeholder="your.email@example.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setEmailError(null);
+                    }}
+                    onBlur={(e) => {
+                      const emailValue = e.target.value;
+                      if (emailValue && !emailValue.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                        setEmailError("Please enter a valid email address");
+                      }
+                    }}
                     required
+                    aria-label="Email address"
+                    aria-describedby={emailError ? "email-error" : undefined}
+                    aria-invalid={!!emailError}
                   />
+                  {emailError && (
+                    <p id="email-error" className="text-xs text-destructive">
+                      {emailError}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -159,7 +177,13 @@ export default function RegisterPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
+                    aria-label="Password"
+                    aria-describedby="password-requirements"
+                    aria-required="true"
                   />
+                  <p id="password-requirements" className="text-xs text-muted-foreground">
+                    Password must be at least 6 characters long
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -171,10 +195,20 @@ export default function RegisterPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
+                    aria-label="Confirm password"
+                    aria-describedby="password-match"
+                    aria-required="true"
+                    aria-invalid={confirmPassword !== "" && password !== confirmPassword}
                   />
+                  {confirmPassword !== "" && password !== confirmPassword && (
+                    <p id="password-match" className="text-xs text-destructive">
+                      Passwords do not match
+                    </p>
+                  )}
                 </div>
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isLoading ? "Creating account..." : "Create account"}
                 </Button>
               </form>
@@ -202,6 +236,7 @@ export default function RegisterPage() {
                 </div>
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isLoading ? "Sending link..." : "Send magic link"}
                 </Button>
               </form>
