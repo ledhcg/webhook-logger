@@ -75,8 +75,8 @@ export default function SettingsTab() {
         // Merge with default settings to handle new properties
         setSettings({ ...DEFAULT_SETTINGS, ...migratedSettings });
         setPrevSettings({ ...DEFAULT_SETTINGS, ...migratedSettings });
-      } catch (e) {
-        console.error("Error parsing settings", e);
+      } catch {
+        // Error parsing settings
         setSettings(DEFAULT_SETTINGS);
         setPrevSettings(DEFAULT_SETTINGS);
         localStorage.setItem(

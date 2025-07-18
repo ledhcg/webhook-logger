@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,7 +21,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { createWebhookToken, UserWebhook } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Copy, Key, Plus, AlertCircle } from "lucide-react";
+import { Copy, Key, Plus, AlertCircle, Loader2 } from "lucide-react";
 
 interface WebhookTokensTabProps {
   userId: string;
@@ -31,7 +31,7 @@ interface WebhookTokensTabProps {
   setWebhooks: (webhooks: UserWebhook[]) => void;
 }
 
-export default function WebhookTokensTab({
+function WebhookTokensTab({
   userId,
   webhooks,
   isLoading,
@@ -61,20 +61,20 @@ export default function WebhookTokensTab({
       toast.success("Webhook token created", {
         description: "Your new webhook token is ready to use",
       });
-    } catch (err) {
-      console.error("Error creating webhook token:", err);
+    } catch {
+      // Error creating webhook token
       toast.error("Failed to create webhook token");
     } finally {
       setIsCreatingToken(false);
     }
   };
 
-  const copyToClipboard = (text: string, message: string) => {
+  const copyToClipboard = useCallback((text: string, message: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard", {
       description: message,
     });
-  };
+  }, []);
 
   return (
     <Card>
@@ -110,8 +110,12 @@ export default function WebhookTokensTab({
             onClick={handleCreateToken}
             disabled={isCreatingToken}
           >
-            <Plus className="w-4 h-4 mr-1" />
-            Create Token
+            {isCreatingToken ? (
+              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4 mr-1" />
+            )}
+            {isCreatingToken ? "Creating..." : "Create Token"}
           </Button>
         </div>
 
@@ -171,3 +175,5 @@ export default function WebhookTokensTab({
     </Card>
   );
 }
+
+export default memo(WebhookTokensTab);

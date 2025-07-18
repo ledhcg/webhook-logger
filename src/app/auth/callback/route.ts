@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
     // Exchange the code for a session
     await supabase.auth.exchangeCodeForSession(code);
 
-    console.log("Auth callback processed with code");
   }
 
   // Redirect to the dashboard

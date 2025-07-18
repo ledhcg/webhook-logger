@@ -25,7 +25,6 @@ export async function middleware(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  console.log("session", session);
 
   // If user is not signed in and tries to access the dashboard or other protected routes
   if (isProtectedRoute && !session) {

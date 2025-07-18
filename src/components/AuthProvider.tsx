@@ -47,16 +47,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           data: { session },
         } = await supabase.auth.getSession();
 
-        console.log(
-          "Initial session check:",
-          session ? "Found session" : "No session"
-        );
+        // Initial session check completed
 
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
-      } catch (error) {
-        console.error("Error getting session:", error);
+      } catch {
+        // Error getting session
         setIsLoading(false);
       }
     };
@@ -67,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("Auth state changed:", _event);
+      // Auth state changed
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
@@ -94,24 +91,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithPassword = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        console.error("Login error:", error.message);
+        // Login error occurred
         return { error };
       }
 
-      console.log("Login successful:", data.user?.email);
-      console.log("Session established:", !!data.session);
+      // Login successful
 
       // The session will be automatically handled by the cookie-based client
 
       return { error: null };
     } catch (err) {
-      console.error("Unexpected login error:", err);
+      // Unexpected login error
       return { error: err as Error };
     }
   };

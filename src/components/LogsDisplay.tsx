@@ -6,7 +6,7 @@ import {
   getCurrentUser,
   UserWebhook,
 } from "@/lib/supabase";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,11 +23,20 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RefreshCw, Info, Loader2, Activity } from "lucide-react";
+import { RefreshCw, Info, Loader2, Activity, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { CodeBlock } from "@/components/ui/code-block";
 import {
@@ -45,7 +54,7 @@ interface LogsDisplayProps {
   onTokenChange?: (token: string | undefined) => void;
 }
 
-export default function LogsDisplay({
+function LogsDisplay({
   tokenId,
   webhooks = [],
   onTokenChange,
@@ -66,6 +75,10 @@ export default function LogsDisplay({
   const [refreshInterval, setRefreshInterval] = useState<number>(5000);
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstLoad = useRef(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalLogs, setTotalLogs] = useState(0);
+  const LOGS_PER_PAGE = 50;
 
   // Load settings from localStorage
   useEffect(() => {
@@ -91,8 +104,8 @@ export default function LogsDisplay({
         setUpdateMode(updateModeValue as UpdateMode);
         setFollowLatest(autoFollowValue);
         setRefreshInterval(settings.refreshInterval || 5000);
-      } catch (e) {
-        console.error("Error parsing settings:", e);
+      } catch {
+        // Error parsing settings, use defaults
         // Use defaults if parsing fails
         const defaultSettings = {
           updateMode: "realtime" as UpdateMode,
@@ -187,8 +200,8 @@ export default function LogsDisplay({
               }
             );
           }
-        } catch (e) {
-          console.error("Error parsing settings change:", e);
+        } catch {
+          // Error parsing settings change
         }
       }
     };
@@ -203,8 +216,8 @@ export default function LogsDisplay({
       try {
         const user = await getCurrentUser();
         setUserId(user?.id || null);
-      } catch (err) {
-        console.error("Error checking authentication:", err);
+      } catch {
+        // Error checking authentication
       }
     }
 
@@ -212,15 +225,34 @@ export default function LogsDisplay({
   }, []);
 
   // Memoize fetchLogs to prevent recreating on each render
-  const fetchLogs = useCallback(async () => {
+  const fetchLogs = useCallback(async (page: number = 1) => {
     try {
       setLoading(true);
 
+      // First, get the total count
+      let countQuery = supabase
+        .from("webhook_logs")
+        .select("*", { count: "exact", head: true });
+
+      if (userId) {
+        countQuery = countQuery.eq("user_id", userId);
+      }
+      if (selectedTokenId) {
+        countQuery = countQuery.eq("token_id", selectedTokenId);
+      }
+
+      const { count } = await countQuery;
+      const totalCount = count || 0;
+      setTotalLogs(totalCount);
+      setTotalPages(Math.ceil(totalCount / LOGS_PER_PAGE));
+
+      // Then fetch the logs for the current page
+      const offset = (page - 1) * LOGS_PER_PAGE;
       let query = supabase
         .from("webhook_logs")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(100);
+        .range(offset, offset + LOGS_PER_PAGE - 1);
 
       // If user is authenticated, filter logs by user_id
       if (userId) {
@@ -241,16 +273,25 @@ export default function LogsDisplay({
       setLogs(data || []);
       setLastRefreshed(new Date());
       setError(null);
+      setCurrentPage(page);
 
       // Return the data so it can be used outside
       return data || [];
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error occurred");
+      const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
+      const userFriendlyMessage = errorMessage.includes("Failed to fetch")
+        ? "Unable to load logs. Please check your internet connection and try again."
+        : errorMessage.includes("unauthorized") || errorMessage.includes("401")
+        ? "You don't have permission to view these logs. Please sign in again."
+        : errorMessage.includes("network") || errorMessage.includes("fetch")
+        ? "Network error. Please check your connection and try again."
+        : "Something went wrong while loading logs. Please try again.";
+      setError(userFriendlyMessage);
       return [];
     } finally {
       setLoading(false);
     }
-  }, [userId, selectedTokenId]);
+  }, [userId, selectedTokenId, LOGS_PER_PAGE]);
 
   // Interval refresh timer
   useEffect(() => {
@@ -262,10 +303,10 @@ export default function LogsDisplay({
 
     // Only set interval if in periodic mode
     if (updateMode === "periodic") {
-      refreshTimerRef.current = setInterval(fetchLogs, refreshInterval);
+      refreshTimerRef.current = setInterval(() => fetchLogs(currentPage), refreshInterval);
 
       // Log to console
-      console.log(`Setting refresh interval to ${refreshInterval}ms`);
+      // Setting refresh interval
     }
 
     return () => {
@@ -274,12 +315,12 @@ export default function LogsDisplay({
         refreshTimerRef.current = null;
       }
     };
-  }, [updateMode, refreshInterval, fetchLogs]);
+  }, [updateMode, refreshInterval, fetchLogs, currentPage]);
 
   // Initial data fetch - only run once on component mount or when userId or tokenId changes
   useEffect(() => {
     const loadData = async () => {
-      const data = await fetchLogs();
+      const data = await fetchLogs(1);
 
       // Always select the first log if data is available and it's the first load
       if (data.length > 0 && (isFirstLoad.current || followLatest)) {
@@ -338,10 +379,8 @@ export default function LogsDisplay({
           }
         }
       )
-      .subscribe((status) => {
-        console.log(
-          `Realtime subscription status: ${status} for channel ${channelName}`
-        );
+      .subscribe(() => {
+        // Realtime subscription status updated
       });
 
     return () => {
@@ -367,8 +406,8 @@ export default function LogsDisplay({
               "webhookLoggerSettings",
               JSON.stringify(settings)
             );
-          } catch (e) {
-            console.error("Error updating settings", e);
+          } catch {
+            // Error updating settings
           }
         }
 
@@ -383,8 +422,8 @@ export default function LogsDisplay({
   );
 
   const handleManualRefresh = useCallback(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+    fetchLogs(currentPage);
+  }, [fetchLogs, currentPage]);
 
   const handleTokenFilterChange = useCallback(
     (value: string) => {
@@ -407,7 +446,7 @@ export default function LogsDisplay({
 
       // Refresh logs with new token filter and select first log
       setTimeout(async () => {
-        const data = await fetchLogs();
+        const data = await fetchLogs(1);
         // Select the first log if available
         if (data.length > 0) {
           setSelectedLog(data[0]);
@@ -429,13 +468,13 @@ export default function LogsDisplay({
   );
 
   // Format the last refreshed timestamp
-  const formatLastRefreshed = () => {
+  const formatLastRefreshed = useCallback(() => {
     if (!lastRefreshed) return "Never";
     return lastRefreshed.toLocaleTimeString();
-  };
+  }, [lastRefreshed]);
 
   // Get badge color for HTTP method
-  const getMethodBadgeVariant = (method?: string) => {
+  const getMethodBadgeVariant = useCallback((method?: string) => {
     switch (method?.toUpperCase()) {
       case "GET":
         return "secondary";
@@ -450,16 +489,37 @@ export default function LogsDisplay({
       default:
         return "outline";
     }
-  };
+  }, []);
 
   // Render sidebar with log list
-  const renderSidebar = () => {
+  const renderSidebar = useMemo(() => {
     if (error) {
       return (
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <div className="space-y-3">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error Loading Logs</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          <Button
+            onClick={() => fetchLogs(currentPage)}
+            variant="outline"
+            className="w-full"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Retrying...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Try Again
+              </>
+            )}
+          </Button>
+        </div>
       );
     }
 
@@ -497,9 +557,19 @@ export default function LogsDisplay({
               className={`flex items-center p-3 rounded-md cursor-pointer transition-colors ${
                 selectedLog?.id === log.id
                   ? "bg-slate-100 border-l-4 border-blue-500"
-                  : "hover:bg-slate-50"
+                  : "hover:bg-slate-50 focus:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               }`}
               onClick={() => selectLog(log)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  selectLog(log);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`${log.method} request to ${log.path} at ${log.created_at ? new Date(log.created_at).toLocaleTimeString() : 'unknown time'}`}
+              aria-pressed={selectedLog?.id === log.id}
             >
               <div className="space-y-1 w-full">
                 <div className="flex items-center justify-between">
@@ -521,10 +591,10 @@ export default function LogsDisplay({
         </div>
       </ScrollArea>
     );
-  };
+  }, [error, loading, logs, selectedLog, selectLog, getMethodBadgeVariant, currentPage, fetchLogs]);
 
   // Render main content area with webhook details
-  const renderWebhookDetails = () => {
+  const renderWebhookDetails = useMemo(() => {
     if (logs.length === 0) {
       return (
         <div className="flex items-center justify-center h-[600px] bg-slate-50 rounded-md">
@@ -624,7 +694,7 @@ export default function LogsDisplay({
         </Tabs>
       </div>
     );
-  };
+  }, [logs, selectedLog, activeTab]);
 
   return (
     <Card>
@@ -646,6 +716,7 @@ export default function LogsDisplay({
                   <Select
                     value={selectedTokenId || "all"}
                     onValueChange={handleTokenFilterChange}
+                    aria-label="Filter logs by webhook token"
                   >
                     <SelectTrigger className="w-full h-9 text-sm bg-white border-slate-200 hover:bg-slate-50 transition-colors">
                       <SelectValue placeholder="All webhooks" />
@@ -679,6 +750,7 @@ export default function LogsDisplay({
                           size="sm"
                           className="h-9 bg-white border-slate-200 hover:bg-slate-50 transition-colors"
                           disabled={loading}
+                          aria-label="Refresh logs"
                         >
                           {loading ? (
                             <>
@@ -698,13 +770,61 @@ export default function LogsDisplay({
                   </TooltipProvider>
                 )}
               </CardHeader>
-              <CardContent className="py-2">{renderSidebar()}</CardContent>
+              <CardContent className="py-2">
+                {renderSidebar}
+                {totalPages > 1 && (
+                  <div className="mt-4 flex justify-center">
+                    <Pagination aria-label="Logs pagination">
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={() => currentPage > 1 && fetchLogs(currentPage - 1)}
+                            className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            aria-disabled={currentPage === 1}
+                          />
+                        </PaginationItem>
+                        {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                          const pageNumber = i + 1;
+                          return (
+                            <PaginationItem key={pageNumber}>
+                              <PaginationLink
+                                onClick={() => fetchLogs(pageNumber)}
+                                isActive={currentPage === pageNumber}
+                                className="cursor-pointer"
+                              >
+                                {pageNumber}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        })}
+                        {totalPages > 5 && (
+                          <PaginationItem>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        )}
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={() => currentPage < totalPages && fetchLogs(currentPage + 1)}
+                            className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                            aria-disabled={currentPage === totalPages}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
+                <div className="mt-2 text-center text-sm text-muted-foreground">
+                  Showing {logs.length} of {totalLogs} logs
+                </div>
+              </CardContent>
             </Card>
           </div>
 
-          <div className="md:col-span-2">{renderWebhookDetails()}</div>
+          <div className="md:col-span-2">{renderWebhookDetails}</div>
         </div>
       </CardContent>
     </Card>
   );
 }
+
+export default memo(LogsDisplay);

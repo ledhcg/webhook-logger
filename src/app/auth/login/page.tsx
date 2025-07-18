@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { AlertCircle, Mail, Lock } from "lucide-react";
+import { AlertCircle, Mail, Lock, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -48,9 +48,9 @@ export default function LoginPage() {
           description: "Check your email for a login link",
         });
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again later.");
-      console.error(err);
+      // Error handled above
     } finally {
       setIsLoading(false);
     }
@@ -74,15 +74,22 @@ export default function LoginPage() {
     }
 
     try {
-      console.log("Attempting login with:", email);
+      // Attempting login
       const { error } = await signInWithPassword(email, password);
 
       if (error) {
-        console.error("Login error in component:", error.message);
-        setError(error.message || "Invalid login credentials");
+        // Login error in component
+        const userFriendlyError = error.message.includes("Invalid login credentials")
+          ? "The email or password you entered is incorrect. Please try again."
+          : error.message.includes("Email not confirmed")
+          ? "Please check your email and confirm your account before signing in."
+          : error.message.includes("Too many requests")
+          ? "Too many login attempts. Please wait a few minutes and try again."
+          : "Unable to sign in. Please check your credentials and try again.";
+        
+        setError(userFriendlyError);
         toast.error("Login failed", {
-          description:
-            error.message || "Please check your credentials and try again",
+          description: userFriendlyError,
         });
       } else {
         // Show success message before redirect
@@ -92,12 +99,12 @@ export default function LoginPage() {
 
         // With cookie auth, we need to do a hard refresh to trigger middleware
         setTimeout(() => {
-          console.log("Redirecting to dashboard...");
+          // Redirecting to dashboard
           window.location.href = "/dashboard";
         }, 1000);
       }
-    } catch (err) {
-      console.error("Unexpected error during login:", err);
+    } catch {
+      // Unexpected error during login
       setError("An unexpected error occurred. Please try again later.");
     } finally {
       setIsLoading(false);
@@ -144,6 +151,8 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    aria-label="Email address"
+                    aria-required="true"
                   />
                 </div>
 
@@ -164,10 +173,13 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    aria-label="Password"
+                    aria-required="true"
                   />
                 </div>
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isLoading ? "Signing in..." : "Sign in"}
                 </Button>
               </form>
@@ -191,10 +203,13 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    aria-label="Email address for magic link"
+                    aria-required="true"
                   />
                 </div>
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isLoading ? "Sending link..." : "Send magic link"}
                 </Button>
               </form>
